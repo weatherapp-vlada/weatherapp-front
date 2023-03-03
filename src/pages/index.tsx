@@ -4,21 +4,22 @@ import { utc } from "moment";
 import { match, P } from "ts-pattern";
 import { AsyncData, Option, Result } from "@swan-io/boxed";
 
-import styles from "@/styles/Home.module.css";
 import {
   Configuration,
   LocationApiFactory,
   LocationDto,
+  LocationWeatherDto,
   WeatherApiFactory,
-  WeatherDto,
 } from "@/api-client";
+import WeatherDetails from "./WeatherDetails";
+import styles from "@/styles/Home.module.css";
 
 const { NotAsked, Loading, Done } = AsyncData.pattern;
 const { Ok, Error } = Result.pattern;
 const { Some, None } = Option.pattern;
 
-type LocationsState = AsyncData<Result<Option<LocationDto[]>, number>>;
-type WeatherDataState = AsyncData<Result<Option<WeatherDto[]>, number>>;
+type LocationsState = AsyncData<Result<Option<LocationDto[]>, Error>>;
+type WeatherDataState = AsyncData<Result<Option<LocationWeatherDto>, Error>>;
 
 const locationApi = LocationApiFactory(
   new Configuration({
@@ -36,9 +37,7 @@ export default function Home() {
   const [locations, setLocations] = useState<LocationsState>(
     AsyncData.NotAsked()
   );
-  const [selectedLocation, setSelectedLocation] = useState<
-    number | undefined
-  >();
+  const [selectedLocation, setSelectedLocation] = useState<number>(-1);
   const [weatherData, setWeatherData] = useState<WeatherDataState>(
     AsyncData.NotAsked()
   );
@@ -56,7 +55,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (selectedLocation !== undefined) {
+    if (selectedLocation !== -1) {
       setWeatherData(AsyncData.Loading());
       const now = utc();
       weatherApi
@@ -67,9 +66,7 @@ export default function Home() {
         })
         .then(({ data: { locations: locationsResponse } }) =>
           setWeatherData(
-            AsyncData.Done(
-              Result.Ok(Option.fromNull(locationsResponse[0].weather))
-            )
+            AsyncData.Done(Result.Ok(Option.fromNull(locationsResponse[0])))
           )
         )
         .catch((err) => setWeatherData(AsyncData.Done(Result.Error(err))));
@@ -98,6 +95,9 @@ export default function Home() {
                   setSelectedLocation(Number(event.target.value));
                 }}
               >
+                <option disabled value={-1}>
+                  -- select an option --
+                </option>
                 {locations.map((location) => (
                   <option key={location.id} value={location.id}>
                     {location.name}, {location.countryCode}
@@ -117,29 +117,7 @@ export default function Home() {
           )
           .with(Done(Ok(None)), () => "No weather data was received")
           .with(Done(Ok(Some(P.select()))), (weatherData) => (
-            <div>
-              <h3>Selected location weather</h3>
-              {weatherData.map(
-                ({
-                  timestamp,
-                  isNight,
-                  temperatureCelsius,
-                  humidity,
-                  precipitationProbability,
-                  pressure,
-                  weatherDescription,
-                  windDirection,
-                  windSpeedMetersPerSecond,
-                  rainVolumePast3HoursMm,
-                  snowVolumePast3HoursMm,
-                }) => (
-                  <div key={timestamp}>
-                    <span>timestamp: {timestamp}</span>
-                    <span>temperatureCelsius: {temperatureCelsius}</span>
-                  </div>
-                )
-              )}
-            </div>
+            <WeatherDetails data={weatherData} />
           ))
           .exhaustive()}
       </main>
