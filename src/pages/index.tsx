@@ -11,7 +11,7 @@ import {
   LocationWeatherDto,
   WeatherApiFactory,
 } from "@/api-client";
-import WeatherDetails from "./WeatherDetails";
+import WeatherDetails from "../components/WeatherDetails";
 import styles from "@/styles/Home.module.css";
 
 const { NotAsked, Loading, Done } = AsyncData.pattern;
@@ -61,7 +61,7 @@ export default function Home() {
       weatherApi
         .forecastControllerGetWeather({
           startDate: now.format(),
-          endDate: now.add(1, "d").format(),
+          endDate: now.add(5, "d").format(),
           locationIds: [selectedLocation],
         })
         .then(({ data: { locations: locationsResponse } }) =>

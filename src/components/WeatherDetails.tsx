@@ -12,11 +12,20 @@ export default function WeatherDetails({
 }) {
   const [selectedTimeWeatherData, setSelectedTimeWeatherData] =
     useState<WeatherDto>(weather[0]);
+  const [now] = useState(utc());
+  const [startTimestamp, setStartTimestamp] = useState(
+    new Date(weather[0].timestamp).getTime()
+  );
 
-  const onSelectedTimeChange = (value: string) => {
+  const onSelectedTimeChange = (value: number) => {
     setSelectedTimeWeatherData(
-      weather.find((item) => item.timestamp === value) || weather[0]
+      weather.find((item) => new Date(item.timestamp).getTime() === value) ||
+        weather[0]
     );
+  };
+
+  const onDayChange = (event: any) => {
+    setStartTimestamp(event.target.value);
   };
 
   return (
@@ -69,7 +78,37 @@ export default function WeatherDetails({
       <WeatherGraph
         weatherData={weather}
         onSelectedTimeChange={onSelectedTimeChange}
+        startTimestamp={startTimestamp}
       />
+
+      <div className="flex">
+        <DayRadioButton day={now.startOf("d")} onDayChange={onDayChange} />
+        <DayRadioButton
+          day={now.clone().add(1, "d").startOf("d")}
+          onDayChange={onDayChange}
+        />
+      </div>
+    </div>
+  );
+}
+
+function DayRadioButton({ day, onDayChange }: any) {
+  return (
+    <div className="flex items-center pl-4 border border-gray-200 rounded dark:border-gray-700">
+      <input
+        id={`day-radio-${day.unix()}`}
+        type="radio"
+        value={day}
+        onChange={onDayChange}
+        name="bordered-radio"
+        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+      />
+      <label
+        htmlFor={`day-radio-${day.unix()}`}
+        className="w-full py-4 ml-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+      >
+        {day.format("ddd")}
+      </label>
     </div>
   );
 }
